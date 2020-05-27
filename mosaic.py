@@ -3,6 +3,18 @@ import numpy as np
 import os
 import glob2
 import tqdm
+import argparse
+
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--image", default="me.jpg",
+                help="Path to the content image")
+ap.add_argument("-d", "--datasets", default="images",
+                help="Path to the images datasets")
+ap.add_argument("-s", "--size",
+                help="Output size of the image")
+ap.add_argument('-o', '--output', default="output.jpg",
+                help="Path to save the image with filename ")
+args = vars(ap.parse_args())
 
 
 class Mosaic:
@@ -14,7 +26,6 @@ class Mosaic:
         self.H = None
         self.W = None
         self.C = None
-        self.ext = os.path.splitext(contentPath)[1]
         self.colors = {}
         self.division = division
         self.contentSize = contentSize
@@ -57,7 +68,7 @@ class Mosaic:
         print("Creating Mosaics.. This may take a while")
         dynamicMean = {}
         for row in tqdm.tqdm(range(0, self.H, pixelHeight)):
-            for col in range(0, self.W, pixelWidth):
+            for col in tqdm.tqdm(range(0, self.W, pixelWidth)):
                 roi = self.content[row:row + pixelHeight, col:col+pixelWidth]
                 mean = np.mean(roi, axis=(0, 1))
                 mean = np.asarray(mean, dtype=np.uint8)
@@ -84,13 +95,12 @@ class Mosaic:
                 self.content[row:row + pixelHeight,
                              col:col+pixelWidth] = minImage
         print("Mosaic Creating Complete... Saving image")
-        cv2.imwrite('output'+self.ext, self.content)
-        print("Image Saved")
+        cv2.imwrite(args['output'], self.content)
+        print("Image Saved..." + args['output'])
+        return self.content
 
 
-mosaic = Mosaic('me.jpg', 'images_test')
-
-mosaic.mosaicify()
-cv2.imshow('asd', mosaic.content)
-
+mosaic = Mosaic(args['image'], args['datasets'],
+                division=64, contentSize=args['size'])
+cv2.imshow('asd', mosaic.mosaicify())
 cv2.waitKey(0)
