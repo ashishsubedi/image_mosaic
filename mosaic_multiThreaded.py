@@ -5,13 +5,14 @@ import glob2
 import tqdm
 import argparse
 import time
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 ap = argparse.ArgumentParser(description="Create Image Mosaic")
 ap.add_argument("-i", "--image", default="me.jpg",
                 help="Path to the content image")
 ap.add_argument("-d", "--datasets", default="images",
                 help="Path to the images datasets")
-ap.add_argument("-r", "--division", default=32, type=int,
+ap.add_argument("-r", "--division", default=128, type=int,
                 help="Divides the image n division. Default is 32. Higher value leads to better mosaic but it takes more time. ")
 ap.add_argument("-s", "--size", nargs='+', default=None, type=int,
                 help="Output size of the image")
@@ -35,6 +36,15 @@ class Mosaic:
         self.loadContent()
         self.initDatasets()
 
+    def _process_img(self, imgPath):
+        img = cv2.imread(imgPath)
+        img = cv2.resize(
+            img, (self.W//self.division, self.H//self.division))
+        mean = np.mean(img, axis=(0, 1))
+        mean = np.asarray(mean, dtype=np.uint8)
+        name = os.path.basename(imgPath)
+        self.colors[name] = mean
+
     def initDatasets(self):
         '''Load the datasets/images and set their RGB values in colors dictionary '''
         types = ('*.png', '*.jpg', '*.jpeg')  # the tuple of file types
@@ -43,16 +53,12 @@ class Mosaic:
             images.extend(glob2.glob(self.imagesPath+'/'+files))
         print("Loading Images dataset")
         start = time.time()
-        if(len(self.colors) == 0):
-            for imgPath in tqdm.tqdm(images):
-                img = cv2.imread(imgPath)
-                img = cv2.resize(
-                    img, (self.W//self.division, self.H//self.division))
-                mean = np.mean(img, axis=(0, 1))
-                mean = np.asarray(mean, dtype=np.uint8)
-                name = os.path.basename(imgPath)
 
-                self.colors[name] = mean
+        if(len(self.colors) == 0):
+            with ThreadPoolExecutor() as executer:
+                executer.map(self._process_img, tqdm.tqdm(images))
+                # executer.shutdown(wait=True)
+
         print('Loading Images dataset.... Done')
         print("Total ", time.time()-start)
 
@@ -62,7 +68,7 @@ class Mosaic:
         img = cv2.resize(img, size)
         return img
 
-    def loadContent(self, ):
+    def loadContent(self):
         '''Load and resize content Image'''
         self.content = cv2.imread(self.contentPath)
         if self.contentSize is not None:
@@ -70,45 +76,54 @@ class Mosaic:
         self.H, self.W, self.C = self.content.shape
         return self.content
 
+    def _replaceTile(self, col):
+        row = self.row
+        roi = self.content[row:row + self.pixelHeight, col:col+self.pixelWidth]
+
+        mean = np.mean(roi, axis=(0, 1))
+        mean = np.asarray(mean, dtype=np.float32)/255.0
+        dynamicAverage = np.mean(mean*255.0).astype(np.uint8)
+
+        minDistance = 10
+        fileName = ''
+
+        if(dynamicAverage in self.dynamicMean.keys()):
+            fileName = self.dynamicMean[dynamicAverage]
+            minImage = self.loadAndResize(
+                os.path.join(self.imagesPath, fileName), (roi.shape[1], roi.shape[0]))
+            self.content[row:row + self.pixelHeight,
+                         col:col+self.pixelWidth] = minImage
+            return
+
+        for name, value in self.colors.items():
+            value = value / 255.0
+            dist = np.linalg.norm(
+                mean-value)
+
+            if(dist < minDistance):
+                fileName = name
+                minDistance = dist
+
+        if(fileName != ''):
+            self.dynamicMean[dynamicAverage] = fileName
+
+            minImage = self.loadAndResize(
+                os.path.join(self.imagesPath, fileName), (roi.shape[1], roi.shape[0]))
+            self.content[row:row + self.pixelHeight,
+                         col:col+self.pixelWidth] = minImage
+
     def mosaicify(self):
-        pixelHeight, pixelWidth = self.H//self.division, self.W//self.division
+        self.pixelHeight, self.pixelWidth = self.H//self.division, self.W//self.division
+
         print("Creating Mosaics.. This may take a while")
-        dynamicMean = {}
+        self.dynamicMean = {}
         start = time.time()
-        for row in tqdm.tqdm(range(0, self.H, pixelHeight)):
-            for col in tqdm.tqdm(range(0, self.W, pixelWidth)):
-                roi = self.content[row:row + pixelHeight, col:col+pixelWidth]
-                mean = np.mean(roi, axis=(0, 1))
-                mean = np.asarray(mean, dtype=np.float32)/255.0
-                dynamicAverage = np.mean(mean*255.0).astype(np.uint8)
+        for row in tqdm.tqdm(range(0, self.H, self.pixelHeight)):
+            cols = range(0, self.W, self.pixelWidth)
+            with ThreadPoolExecutor() as executer:
+                self.row = row
+                executer.map(self._replaceTile, cols)
 
-                minDistance = 10
-                fileName = ''
-
-                if(dynamicAverage in dynamicMean.keys()):
-                    fileName = dynamicMean[dynamicAverage]
-                    minImage = self.loadAndResize(
-                        os.path.join(self.imagesPath, fileName), (roi.shape[1], roi.shape[0]))
-                    self.content[row:row + pixelHeight,
-                                 col:col+pixelWidth] = minImage
-                    continue
-
-                for name, value in self.colors.items():
-                    value = value / 255.0
-                    dist = np.linalg.norm(
-                        mean-value)
-
-                    if(dist < minDistance):
-                        fileName = name
-                        minDistance = dist
-
-                if(fileName != ''):
-                    dynamicMean[dynamicAverage] = fileName
-
-                    minImage = self.loadAndResize(
-                        os.path.join(self.imagesPath, fileName), (roi.shape[1], roi.shape[0]))
-                    self.content[row:row + pixelHeight,
-                                 col:col+pixelWidth] = minImage
         print("Mosaic Creating Complete... Saving image")
         cv2.imwrite(args['output'], self.content)
         print("Image Saved..." + args['output'])
@@ -118,5 +133,8 @@ class Mosaic:
 
 mosaic = Mosaic(args['image'], args['datasets'],
                 division=args['division'], contentSize=None if args['size'] is None else tuple(args['size']))
-cv2.imshow('Output', mosaic.mosaicify())
+print(len(mosaic.colors))
+mosaic.mosaicify()
+
+cv2.imshow('Output', mosaic.content)
 cv2.waitKey(0)
