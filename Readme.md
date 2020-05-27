@@ -21,6 +21,12 @@ Python 3, OpenCV 4(<code>pip install opencv-python </code>), Numpy<code>pip inst
 - <h3> Use <code> -o [path] </code> to save image. (Add filename with path)
 
 <h1> Example </h1>
+<code>python mosaic.py -i dicaprio.jpg -r 50 -o diCaprio_mosaic.jpg</code>
+<h3> Input </h3>
+<img src='dicaprio.jpg'>
+<h3> Ouptut </h3>
+<img src="diCaprio_mosaic.jpg"></img>
+
 <code>python mosaic.py -i me.jpg -r 64 -d ./images -s 600 600 -o ./output.jpg </code>
 
 <h3> Input </h3>

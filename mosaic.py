@@ -4,7 +4,7 @@ import os
 import glob2
 import tqdm
 import argparse
-
+import time
 
 ap = argparse.ArgumentParser(description="Create Image Mosaic")
 ap.add_argument("-i", "--image", default="me.jpg",
@@ -72,7 +72,7 @@ class Mosaic:
         pixelHeight, pixelWidth = self.H//self.division, self.W//self.division
         print("Creating Mosaics.. This may take a while")
         dynamicMean = {}
-
+        start = time.time()
         for row in tqdm.tqdm(range(0, self.H, pixelHeight)):
             for col in tqdm.tqdm(range(0, self.W, pixelWidth)):
                 roi = self.content[row:row + pixelHeight, col:col+pixelWidth]
@@ -90,6 +90,7 @@ class Mosaic:
                     self.content[row:row + pixelHeight,
                                  col:col+pixelWidth] = minImage
                     continue
+
                 for name, value in self.colors.items():
                     value = value / 255.0
                     dist = np.linalg.norm(
@@ -109,6 +110,7 @@ class Mosaic:
         print("Mosaic Creating Complete... Saving image")
         cv2.imwrite(args['output'], self.content)
         print("Image Saved..." + args['output'])
+        print("Total Time taken : ", time.time()-start, 'secs')
         return self.content
 
 
