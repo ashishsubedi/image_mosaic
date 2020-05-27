@@ -10,7 +10,9 @@ ap.add_argument("-i", "--image", default="me.jpg",
                 help="Path to the content image")
 ap.add_argument("-d", "--datasets", default="images",
                 help="Path to the images datasets")
-ap.add_argument("-s", "--size",
+ap.add_argument("-r", "--division", default=32, type=int,
+                help="Divides the image n division. Default is 32. Higher value leads to better mosaic but it takes more time. ")
+ap.add_argument("-s", "--size", nargs='+', default=None, type=int,
                 help="Output size of the image")
 ap.add_argument('-o', '--output', default="output.jpg",
                 help="Path to save the image with filename ")
@@ -101,6 +103,6 @@ class Mosaic:
 
 
 mosaic = Mosaic(args['image'], args['datasets'],
-                division=64, contentSize=args['size'])
+                division=args['division'], contentSize=None if args['size'] is None else tuple(args['size']))
 cv2.imshow('asd', mosaic.mosaicify())
 cv2.waitKey(0)
