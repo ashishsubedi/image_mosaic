@@ -5,7 +5,7 @@ import glob2
 import tqdm
 import argparse
 
-ap = argparse.ArgumentParser()
+ap = argparse.ArgumentParser(description="Create Image Mosaic")
 ap.add_argument("-i", "--image", default="me.jpg",
                 help="Path to the content image")
 ap.add_argument("-d", "--datasets", default="images",
