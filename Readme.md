@@ -2,12 +2,12 @@
 
 ### Requirements
 
-Python 3, OpenCV 4, Numpy, tqdm (<code>pip install tqdm </code>)
+Python 3, OpenCV 4(<code>pip install opencv-python </code>), Numpy<code>pip install numpy</code>, tqdm (<code>pip install tqdm </code>)
 
 # How to Use
 
 1. Clone or Download Repo
-2. Prepare images to create mosaic [and add to the folder called images].
+2. Prepare images to create mosaic [and add to the folder called images] (about 20,30 works. More images of different color leads to better mosaics).
 
 - <h2> Note: Use this to create sample images from video </h2> (https://trac.ffmpeg.org/wiki/Create%20a%20thumbnail%20image%20every%20X%20seconds%20of%20the%20video)
 
@@ -22,3 +22,8 @@ Python 3, OpenCV 4, Numpy, tqdm (<code>pip install tqdm </code>)
 
 <h1> Example </h1>
 <code>python mosaic.py -i me.jpg -r 64 -d ./images -s 600 600 -o ./output.jpg </code>
+
+<h3> Input </h3>
+<img src='me.jpg'>
+<h3> Ouptut </h3>
+<img src="me_output.jpg">
