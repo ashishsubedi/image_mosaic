@@ -7,8 +7,11 @@ Python 3, OpenCV 4, Numpy, tqdm (<code>pip install tqdm </code>)
 # How to Use
 
 1. Clone or Download Repo
+2. Prepare images to create mosaic [and add to the folder called images].
 
-2. Open CMD in the repo location and run mosaic.py <code> python mosaic.py </code> (https://www.thewindowsclub.com/how-to-open-command-prompt-from-right-click-menu/)
+- <h2> Note: Use this to create sample images from video </h2> (https://trac.ffmpeg.org/wiki/Create%20a%20thumbnail%20image%20every%20X%20seconds%20of%20the%20video)
+
+3. Open CMD in the repo location and run mosaic.py <code> python mosaic.py </code> (https://www.thewindowsclub.com/how-to-open-command-prompt-from-right-click-menu/)
 
 - <h2> Note: If you want the above command to work, copy your image into the folder and rename it to me.jpg and add other image samples in the folder called images</h2>
 - <h3> Use <code> -i [path] </code> flag to add your content image

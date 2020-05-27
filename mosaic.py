@@ -5,6 +5,7 @@ import glob2
 import tqdm
 import argparse
 
+
 ap = argparse.ArgumentParser(description="Create Image Mosaic")
 ap.add_argument("-i", "--image", default="me.jpg",
                 help="Path to the content image")
@@ -41,18 +42,20 @@ class Mosaic:
         for files in types:
             images.extend(glob2.glob(self.imagesPath+'/'+files))
         print("Loading Images dataset")
-        for imgPath in tqdm.tqdm(images):
-            img = cv2.imread(imgPath)
-            img = cv2.resize(
-                img, (self.W//self.division, self.H//self.division))
-            mean = np.mean(img, axis=(0, 1))
-            mean = np.asarray(mean, dtype=np.uint8)
-            name = os.path.basename(imgPath)
+        if(len(self.colors) == 0):
+            for imgPath in tqdm.tqdm(images):
+                img = cv2.imread(imgPath)
+                img = cv2.resize(
+                    img, (self.W//self.division, self.H//self.division))
+                mean = np.mean(img, axis=(0, 1))
+                mean = np.asarray(mean, dtype=np.uint8)
+                name = os.path.basename(imgPath)
 
-            self.colors[name] = mean
+                self.colors[name] = mean
         print('Loading Images dataset.... Done')
 
     def loadAndResize(self, path, size):
+
         img = cv2.imread(path)
         img = cv2.resize(img, size)
         return img
@@ -69,15 +72,17 @@ class Mosaic:
         pixelHeight, pixelWidth = self.H//self.division, self.W//self.division
         print("Creating Mosaics.. This may take a while")
         dynamicMean = {}
+
         for row in tqdm.tqdm(range(0, self.H, pixelHeight)):
             for col in tqdm.tqdm(range(0, self.W, pixelWidth)):
                 roi = self.content[row:row + pixelHeight, col:col+pixelWidth]
                 mean = np.mean(roi, axis=(0, 1))
-                mean = np.asarray(mean, dtype=np.uint8)
-                dynamicAverage = np.mean(mean)
-                present = False
-                minDistance = np.inf
+                mean = np.asarray(mean, dtype=np.float32)/255.0
+                dynamicAverage = np.mean(mean*255.0).astype(np.uint8)
+
+                minDistance = 10
                 fileName = ''
+
                 if(dynamicAverage in dynamicMean.keys()):
                     fileName = dynamicMean[dynamicAverage]
                     minImage = self.loadAndResize(
@@ -86,16 +91,21 @@ class Mosaic:
                                  col:col+pixelWidth] = minImage
                     continue
                 for name, value in self.colors.items():
-                    dist = np.linalg.norm(mean-value)
+                    value = value / 255.0
+                    dist = np.linalg.norm(
+                        mean-value)
+
                     if(dist < minDistance):
                         fileName = name
                         minDistance = dist
 
-                dynamicMean[dynamicAverage] = fileName
-                minImage = self.loadAndResize(
-                    os.path.join(self.imagesPath, fileName), (roi.shape[1], roi.shape[0]))
-                self.content[row:row + pixelHeight,
-                             col:col+pixelWidth] = minImage
+                if(fileName != ''):
+                    dynamicMean[dynamicAverage] = fileName
+
+                    minImage = self.loadAndResize(
+                        os.path.join(self.imagesPath, fileName), (roi.shape[1], roi.shape[0]))
+                    self.content[row:row + pixelHeight,
+                                 col:col+pixelWidth] = minImage
         print("Mosaic Creating Complete... Saving image")
         cv2.imwrite(args['output'], self.content)
         print("Image Saved..." + args['output'])
@@ -104,5 +114,5 @@ class Mosaic:
 
 mosaic = Mosaic(args['image'], args['datasets'],
                 division=args['division'], contentSize=None if args['size'] is None else tuple(args['size']))
-cv2.imshow('asd', mosaic.mosaicify())
+cv2.imshow('Output', mosaic.mosaicify())
 cv2.waitKey(0)
