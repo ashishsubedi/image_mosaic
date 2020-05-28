@@ -11,13 +11,14 @@ ap.add_argument("-i", "--image", default="me.jpg",
                 help="Path to the content image")
 ap.add_argument("-d", "--datasets", default="images",
                 help="Path to the images datasets")
-ap.add_argument("-r", "--division", default=32, type=int,
+ap.add_argument("-r", "--division", default=16, type=int,
                 help="Divides the image n division. Default is 32. Higher value leads to better mosaic but it takes more time. ")
 ap.add_argument("-s", "--size", nargs='+', default=None, type=int,
                 help="Output size of the image")
 ap.add_argument('-o', '--output', default="output.jpg",
                 help="Path to save the image with filename ")
 args = vars(ap.parse_args())
+WEIGHT = 0.7
 
 
 class Mosaic:
@@ -90,7 +91,7 @@ class Mosaic:
                     minImage = self.loadAndResize(
                         os.path.join(self.imagesPath, fileName), (roi.shape[1], roi.shape[0]))
                     self.content[row:row + pixelHeight,
-                                 col:col+pixelWidth] = minImage
+                                 col:col+pixelWidth] = cv2.addWeighted(minImage, WEIGHT, roi, (1-WEIGHT), 1)
                     continue
 
                 for name, value in self.colors.items():
@@ -108,7 +109,9 @@ class Mosaic:
                     minImage = self.loadAndResize(
                         os.path.join(self.imagesPath, fileName), (roi.shape[1], roi.shape[0]))
                     self.content[row:row + pixelHeight,
-                                 col:col+pixelWidth] = minImage
+                                 col:col+pixelWidth] = cv2.addWeighted(minImage, WEIGHT, roi, (1-WEIGHT), 1)
+                    # self.content[row:row + pixelHeight,
+                    #              col:col+pixelWidth] = minImage
         print("Mosaic Creating Complete... Saving image")
         cv2.imwrite(args['output'], self.content)
         print("Image Saved..." + args['output'])

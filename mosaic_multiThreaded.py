@@ -7,16 +7,19 @@ import argparse
 import time
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
+WEIGHT = 0.8
+
+
 ap = argparse.ArgumentParser(description="Create Image Mosaic")
 ap.add_argument("-i", "--image", default="me.jpg",
                 help="Path to the content image")
 ap.add_argument("-d", "--datasets", default="images",
                 help="Path to the images datasets")
-ap.add_argument("-r", "--division", default=128, type=int,
+ap.add_argument("-r", "--division", default=32, type=int,
                 help="Divides the image n division. Default is 32. Higher value leads to better mosaic but it takes more time. ")
 ap.add_argument("-s", "--size", nargs='+', default=None, type=int,
                 help="Output size of the image")
-ap.add_argument('-o', '--output', default="output.jpg",
+ap.add_argument('-o', '--output', default="output_multi.jpg",
                 help="Path to save the image with filename ")
 args = vars(ap.parse_args())
 
@@ -60,7 +63,7 @@ class Mosaic:
                 # executer.shutdown(wait=True)
 
         print('Loading Images dataset.... Done')
-        print("Total ", time.time()-start)
+        print("Total ", time.time()-start, 'secs')
 
     def loadAndResize(self, path, size):
 
@@ -92,7 +95,7 @@ class Mosaic:
             minImage = self.loadAndResize(
                 os.path.join(self.imagesPath, fileName), (roi.shape[1], roi.shape[0]))
             self.content[row:row + self.pixelHeight,
-                         col:col+self.pixelWidth] = minImage
+                         col:col+self.pixelWidth] = cv2.addWeighted(minImage, WEIGHT, roi, (1-WEIGHT), 0)
             return
 
         for name, value in self.colors.items():
@@ -110,7 +113,7 @@ class Mosaic:
             minImage = self.loadAndResize(
                 os.path.join(self.imagesPath, fileName), (roi.shape[1], roi.shape[0]))
             self.content[row:row + self.pixelHeight,
-                         col:col+self.pixelWidth] = minImage
+                         col: col+self.pixelWidth] = cv2.addWeighted(minImage, WEIGHT, roi, (1-WEIGHT), 0)
 
     def mosaicify(self):
         self.pixelHeight, self.pixelWidth = self.H//self.division, self.W//self.division
@@ -133,7 +136,7 @@ class Mosaic:
 
 mosaic = Mosaic(args['image'], args['datasets'],
                 division=args['division'], contentSize=None if args['size'] is None else tuple(args['size']))
-print(len(mosaic.colors))
+
 mosaic.mosaicify()
 
 cv2.imshow('Output', mosaic.content)
