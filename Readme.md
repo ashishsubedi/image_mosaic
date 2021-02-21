@@ -1,4 +1,4 @@
-# Photo Mosaic
+# Photo Mosaic (Added limited support for video)
 
 ### Requirements
 
@@ -42,3 +42,8 @@ OR
 <img src="me_output.jpg">
 <h3> MultiThreaded Ouptut </h3>
 <img src="output.jpg">
+
+## VIDEO
+### IT TAKES A LONG TIME TO PROCESS IT
+(Original video)(https://www.youtube.com/watch?v=_uqm-Ans1rU)
+See output.avi for processed video, using default settings.
