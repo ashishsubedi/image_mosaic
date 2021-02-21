@@ -5,6 +5,7 @@ import glob2
 import tqdm
 import argparse
 import time
+import sys
 
 ap = argparse.ArgumentParser(description="Create Image Mosaic")
 ap.add_argument("-i", "--image", default="me.jpg",
@@ -118,8 +119,11 @@ class Mosaic:
         print("Total Time taken : ", time.time()-start, 'secs')
         return self.content
 
+if __name__ == '__main__':
+    mosaic = Mosaic(args['image'], args['datasets'],
+                    division=args['division'], contentSize=None if args['size'] is None else tuple(args['size']))
+    cv2.imshow('Output', mosaic.mosaicify())
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    sys.exit(1)
 
-mosaic = Mosaic(args['image'], args['datasets'],
-                division=args['division'], contentSize=None if args['size'] is None else tuple(args['size']))
-cv2.imshow('Output', mosaic.mosaicify())
-cv2.waitKey(0)
